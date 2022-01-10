@@ -2,11 +2,6 @@ package windows
 
 import win "core:sys/windows"
 
-LONG :: win.LONG;
-WCHAR :: win.WCHAR;
-WORD :: win.WORD;
-DWORD :: win.DWORD;
-
 foreign import kernel32 "system:kernel32.lib"
 
 @(default_calling_convention = "stdcall")
