@@ -12,11 +12,15 @@ import "renderer"
 window : glfw.WindowHandle;
 
 main :: proc() {
+    log.should_log_to_file(true);
     log.write("Starting");
     
     glfw.Init();
     
-    window = glfw.CreateWindow(800, 600, "Batch Renderer", nil, nil);
+    res_x, res_y : i32 = 800,600;
+
+    log.write("Creating window", res_x, "x", res_y);
+    window = glfw.CreateWindow(res_x, res_y, "Batch Renderer", nil, nil);
     glfw.MakeContextCurrent(window);
     glfw.SetKeyCallback(window, key_callback);
     glfw.SetFramebufferSizeCallback(window, size_callback);
@@ -47,6 +51,8 @@ main :: proc() {
         glfw.SwapBuffers(window);
         glfw.PollEvents();
     }
+
+    log.close();
 }
 
 init :: proc() -> bool {
