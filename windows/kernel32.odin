@@ -16,7 +16,7 @@ TIME_ZONE_INFORMATION :: struct {
     DaylightName: [32]WCHAR,
     DaylightDate: SYSTEMTIME,
     DaylightBias: LONG,
-};
+}
 
 SYSTEMTIME :: struct {
     wYear: WORD,
@@ -27,4 +27,4 @@ SYSTEMTIME :: struct {
     wMinute: WORD,
     wSecond: WORD,
     wMilliseconds: WORD,
-};
+}
