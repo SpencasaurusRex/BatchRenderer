@@ -1,7 +1,5 @@
 package windows
 
-import win "core:sys/windows"
-
 foreign import kernel32 "system:kernel32.lib"
 
 @(default_calling_convention = "stdcall")
@@ -11,7 +9,7 @@ foreign kernel32 {
 }
 
 TIME_ZONE_INFORMATION :: struct {
-    Bias: win.LONG,
+    Bias: LONG,
     StandardName: [32]WCHAR,
     StandardDate: SYSTEMTIME,
     StandardBias: LONG,

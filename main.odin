@@ -51,8 +51,6 @@ main :: proc() {
         glfw.SwapBuffers(window);
         glfw.PollEvents();
     }
-
-    log.close();
 }
 
 init :: proc() -> bool {

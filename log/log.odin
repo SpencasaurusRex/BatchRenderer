@@ -18,6 +18,7 @@ write :: proc(args: ..any, sep := " ") {
     _write_formatted(format_message(args=args, sep=sep));
 }
 
+// TODO: Change this to write to buffer and asyncrhonously write to file
 _write_formatted :: proc(message: string) {
     if log_to_file_flag {
         log_to_file(message);
@@ -83,8 +84,4 @@ _create_log_file :: proc() {
     }
     fmt.sbprint(&temp_log, format_message("Logging to", file_path));
     fmt.print(strings.to_string(temp_log));
-}
-
-close :: proc() {
-    os.close(log_file_handle);
 }
