@@ -4,7 +4,7 @@ import "vendor:glfw"
 
 import "../log"
 
-buffer_size :: 100
+buffer_size :: 10
 
 perf_stats :: struct {
     measurements: [buffer_size]f32,

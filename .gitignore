@@ -1,5 +1,5 @@
-main.exe
-main.pdb
+*.exe
+*.pdb
 log.txt
 .vs/
 BatchRenderer.pdb
