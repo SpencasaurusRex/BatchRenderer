@@ -1,29 +1,31 @@
 package perf
 
+import "core:math"
+import "core:time"
 import "vendor:glfw"
 
 import "../log"
 
-buffer_size :: 10
+buffer_size :: 1
 
 perf_stats :: struct {
-    measurements: [buffer_size]f32,
+    measurements: [buffer_size]time.Duration,
     current_measure_index: i32,
-    total: f32,
-    average: f32,
-    start_time: f32,
+    total: time.Duration,
+    average: time.Duration,
+    start_time: time.Tick,
 }
 
 render: perf_stats
 update: perf_stats
 
 start_measure :: proc(stats: ^perf_stats) {
-    stats.start_time = f32(glfw.GetTime())
+    stats.start_time = time.tick_now()
 }
 
 end_measure :: proc(stats: ^perf_stats) {
     using stats
-    diff := f32(glfw.GetTime()) - start_time
+    diff := time.tick_diff(start_time, time.tick_now())
     total -= measurements[current_measure_index]
     measurements[current_measure_index] = diff
     total += diff
@@ -53,5 +55,7 @@ end_render :: proc() {
 }
 
 write_stats :: proc() {
-    log.write(args={"Update: ", update.average * 1000, "ms | Render: ", render.average * 1000, "ms"}, sep="")
+    update_time := time.duration_microseconds(update.average)
+    render_time := time.duration_microseconds(render.average)
+    log.write("Updt", update_time, "us | Rndr", render_time, "us")
 }

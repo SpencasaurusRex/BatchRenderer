@@ -12,6 +12,9 @@ get_proc_address :: proc(p: rawptr, name: cstring) {
 }
 
 init :: proc() -> bool {
+    perf.proc_start(#procedure)
+    defer perf.proc_end(#procedure)
+
     gl.load_up_to(4, 6, get_proc_address)
     log.write(args={"Loaded OpenGL ", gl.loaded_up_to[0], ".", gl.loaded_up_to[1]}, sep="")
 
@@ -56,7 +59,5 @@ clear :: proc() {
 }
 
 draw :: proc() {
-    perf.start_render()
     clear()
-    perf.end_render()
 }

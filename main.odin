@@ -13,7 +13,10 @@ import "renderer"
 window : glfw.WindowHandle
 
 main :: proc() {
-    log.should_log_to_file(true)
+    when ODIN_DEBUG {
+        log.should_log_to_console(true)
+        log.should_log_to_file(true)
+    }
     log.write("Starting")
     
     glfw.Init()
@@ -62,7 +65,7 @@ init :: proc() -> bool {
 
 update :: proc(dt: f32) {
     perf.start_update()
-    
+
     perf.end_update()
     perf.write_stats()
 }

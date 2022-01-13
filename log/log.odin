@@ -4,57 +4,97 @@ import "core:time"
 import "core:fmt"
 import "core:strings"
 import "core:os"
+import "core:thread"
 
 import win "../windows"
 
-log_to_file_flag := false
-log_file_handle : os.Handle
+@private
+log_console_fields :: struct {
+    flag: bool,
+}
+log_console: log_console_fields
+
+
+@private
+log_file_fields :: struct {
+    flag: bool,
+    handle: os.Handle,
+    buffer: strings.Builder,
+    thread: ^thread.Thread,
+}
+log_file: log_file_fields
+
+
+should_log_to_console :: proc(flag: bool) {
+    log_console.flag = flag
+}
+
 
 should_log_to_file :: proc(flag: bool) {
-    log_to_file_flag = flag
+    log_file.flag = flag
+    if flag {
+        if log_file.thread == nil {
+            log_file.buffer = strings.make_builder(0, 1024)
+            log_file.thread = thread.create_and_start(_file_writer_worker)
+        }
+    }
+    else if log_file.thread != nil {
+        thread.join(log_file.thread)
+        log_file.thread = nil
+        strings.destroy_builder(&log_file.buffer)
+    }
 }
+
 
 write :: proc(args: ..any, sep := " ") {
-    _write_formatted(format_message(args=args, sep=sep))
+    if !log_file.flag && !log_console.flag { return }
+    _write_formatted(_format_message(args=args, sep=sep))
 }
 
-// TODO: Change this to write to buffer and asynchronously write to file
-_write_formatted :: proc(message: string) {
-    if log_to_file_flag {
-        log_to_file(message)
-    }
-    fmt.print(message)
-}
 
-format_message :: proc(args: ..any, sep := " ") -> string {
-    t: win.SYSTEMTIME
-    win.GetLocalTime(&t)
-    
-    message := fmt.tprint(args=args, sep=sep)
-    line := fmt.tprintf("%2d:%2d:%2d.%3d: %s\n", t.wHour, t.wMinute, t.wSecond, t.wMilliseconds, message)
-
-    return line
-}
-
-log_to_file :: proc(line: string) {
-    if log_file_handle == 0 {
+write_to_file :: proc(buffer: strings.Builder) {
+    if log_file.handle == 0 {
         _create_log_file()
     }
     
-    _, err := os.write_string(log_file_handle, line)
+    _, err := os.write_string(log_file.handle, strings.to_string(buffer))
     if err != win.ERROR_NONE {
         should_log_to_file(false)
         write("Failure to write string to file, disabling log to file")
     }
-    err = os.flush(log_file_handle)
+    err = os.flush(log_file.handle)
     if err != win.ERROR_NONE {
         should_log_to_file(false)
         write("Failure to flush string to file, disabling log to file")
     }
 }
 
+
+@private
+WRITE_FREQUENCY:: 10
+_file_writer_worker :: proc(thread: ^thread.Thread) {
+    for {
+        write_to_file(log_file.buffer)
+        strings.reset_builder(&log_file.buffer)
+        time.sleep(time.Millisecond * WRITE_FREQUENCY)
+    }
+}
+
+
+@private
+_write_formatted :: proc(message: string) {
+    if log_file.flag {
+        fmt.sbprint(&log_file.buffer, message)
+    }
+    if log_console.flag {
+        fmt.print(message)
+    }
+}
+
+
+@private
 _create_log_file :: proc() {
-    temp_log := strings.make_builder(0, 500, context.temp_allocator)
+    temp_log := strings.make_builder(0, 512, context.temp_allocator)
 
     file_path_max :: 300
     data: [file_path_max]byte
@@ -64,7 +104,7 @@ _create_log_file :: proc() {
     res := win.GetModuleFileNameA(cast(win.Hmodule)nil, transmute(cstring)&data, file_path_max)
 
     if win.GetLastError() != 0 {
-        fmt.sbprint(&temp_log, format_message("Unable to locate exe, falling back to current directory"))
+        fmt.sbprint(&temp_log, _format_message("Unable to locate exe, falling back to current directory"))
         file_path = string(os.get_current_directory())
     }
     else {
@@ -75,13 +115,25 @@ _create_log_file :: proc() {
     file_path = fmt.tprintf("%s\\log.txt", file_path)
     
     err: os.Errno
-    log_file_handle,err = os.open(file_path, win.O_CREATE | win.O_WRONLY | win.O_TRUNC)
+    log_file.handle,err = os.open(file_path, win.O_CREATE | win.O_WRONLY | win.O_TRUNC)
     if err != 0 {
         should_log_to_file(false)
-        fmt.sbprint(&temp_log, format_message("Unable to create log file at", file_path, ", disabling log to file"))
+        fmt.sbprint(&temp_log, _format_message("Unable to create log file at", file_path, ", disabling log to file"))
         fmt.print(strings.to_string(temp_log))
         return
     }
-    fmt.sbprint(&temp_log, format_message("Logging to", file_path))
+    fmt.sbprint(&temp_log, _format_message("Logging to", file_path))
     fmt.print(strings.to_string(temp_log))
+}
+
+
+@private
+_format_message :: proc(args: ..any, sep := " ") -> string {
+    t: win.SYSTEMTIME
+    win.GetLocalTime(&t)
+    
+    message := fmt.tprint(args=args, sep=sep)
+    line := fmt.tprintf("%2d:%2d:%2d.%3d: %s\n", t.wHour, t.wMinute, t.wSecond, t.wMilliseconds, message)
+
+    return line
 }
