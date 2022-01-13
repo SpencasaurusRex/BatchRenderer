@@ -6,6 +6,7 @@ import "core:fmt"
 import gl "vendor:OpenGL"
 import "vendor:glfw"
 
+import "perf"
 import "log"
 import "renderer"
 
@@ -60,7 +61,10 @@ init :: proc() -> bool {
 }
 
 update :: proc(dt: f32) {
-    log.write("Update")
+    perf.start_update()
+    
+    perf.end_update()
+    perf.write_stats()
 }
 
 key_callback :: proc "c" (window: glfw.WindowHandle, key, scancode, action, modes: i32) {

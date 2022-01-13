@@ -5,6 +5,7 @@ import gl "vendor:OpenGL"
 import "core:sys/win32"
 
 import "../log"
+import "../perf"
 
 get_proc_address :: proc(p: rawptr, name: cstring) {
     (cast(^rawptr)p)^ = glfw.GetProcAddress(name)
@@ -55,5 +56,7 @@ clear :: proc() {
 }
 
 draw :: proc() {
+    perf.start_render()
     clear()
+    perf.end_render()
 }

@@ -18,7 +18,7 @@ write :: proc(args: ..any, sep := " ") {
     _write_formatted(format_message(args=args, sep=sep))
 }
 
-// TODO: Change this to write to buffer and asyncrhonously write to file
+// TODO: Change this to write to buffer and asynchronously write to file
 _write_formatted :: proc(message: string) {
     if log_to_file_flag {
         log_to_file(message)
@@ -37,7 +37,7 @@ format_message :: proc(args: ..any, sep := " ") -> string {
 }
 
 log_to_file :: proc(line: string) {
-    if log_file_handle == cast(os.Handle)0 {
+    if log_file_handle == 0 {
         _create_log_file()
     }
     
