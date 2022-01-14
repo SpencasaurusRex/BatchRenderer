@@ -60,7 +60,8 @@ clear :: proc() {
 }
 
 draw :: proc() {
-    perf.start_render()
     clear()
-    perf.end_render()
+    perf.start_render()
+    defer perf.end_render()
+    
 }

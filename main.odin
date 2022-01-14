@@ -12,6 +12,7 @@ import "renderer"
 import "trace"
 
 window : glfw.WindowHandle
+update_count: int
 
 main :: proc() {
     when ODIN_DEBUG {
@@ -76,6 +77,12 @@ update :: proc(dt: f32) {
 
     perf.start_update()
     defer perf.end_update()
+
+    if update_count % 10 == 0 {
+        perf.write_stats()
+    }
+
+    update_count += 1
 }
 
 key_callback :: proc "c" (window: glfw.WindowHandle, key, scancode, action, modes: i32) {

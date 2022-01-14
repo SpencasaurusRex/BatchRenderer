@@ -33,9 +33,7 @@ end_measure :: proc(stats: ^perf_stats) {
     average = total / len(measurements)
 
     current_measure_index += 1
-    // TODO @Bug Something about this doesn't seem right, it prints in bursts of 2
     if current_measure_index >= len(measurements) {
-        write_stats()
         current_measure_index = 0
     }
 }
