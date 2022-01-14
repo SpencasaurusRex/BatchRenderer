@@ -1,6 +1,10 @@
 *.exe
 *.pdb
-log.txt
+
 .vs/
-BatchRenderer.pdb
-BatchRenderer.exe
+
+# Assembly
+main.S
+
+log.txt
+trace.json

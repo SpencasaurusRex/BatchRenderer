@@ -9,6 +9,7 @@ import "vendor:glfw"
 import "perf"
 import "log"
 import "renderer"
+import "trace"
 
 window : glfw.WindowHandle
 
@@ -16,6 +17,8 @@ main :: proc() {
     when ODIN_DEBUG {
         log.should_log_to_console(true)
         log.should_log_to_file(true)
+        trace.init()
+        defer trace.stop()
     }
     log.write("Starting")
     
@@ -55,31 +58,32 @@ main :: proc() {
         glfw.SwapBuffers(window)
         glfw.PollEvents()
     }
+
 }
 
 init :: proc() -> bool {
+    trace.proc_start()
+    defer trace.proc_end()
+    
     log.write("Init")
 
     return true
 }
 
 update :: proc(dt: f32) {
-    perf.start_update()
+    trace.proc_start()
+    defer trace.proc_end()
 
-    perf.end_update()
-    perf.write_stats()
+    perf.start_update()
+    defer perf.end_update()
 }
 
 key_callback :: proc "c" (window: glfw.WindowHandle, key, scancode, action, modes: i32) {
     if key == glfw.KEY_ESCAPE && action == glfw.PRESS {
-        exit()
+        glfw.SetWindowShouldClose(window, true)
     }
 }
 
 size_callback :: proc "c" (window: glfw.WindowHandle, width, height: i32) {
     gl.Viewport(0, 0, width, height)
-}
-
-exit :: proc "c" () {
-    glfw.SetWindowShouldClose(window, true)
 }

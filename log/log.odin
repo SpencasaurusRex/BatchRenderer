@@ -58,12 +58,12 @@ write_to_file :: proc(buffer: strings.Builder) {
     }
     
     _, err := os.write_string(log_file.handle, strings.to_string(buffer))
-    if err != win.ERROR_NONE {
+    if err != os.ERROR_NONE {
         should_log_to_file(false)
         write("Failure to write string to file, disabling log to file")
     }
     err = os.flush(log_file.handle)
-    if err != win.ERROR_NONE {
+    if err != os.ERROR_NONE {
         should_log_to_file(false)
         write("Failure to flush string to file, disabling log to file")
     }
@@ -96,12 +96,12 @@ _write_formatted :: proc(message: string) {
 _create_log_file :: proc() {
     temp_log := strings.make_builder(0, 512, context.temp_allocator)
 
-    file_path_max :: 300
-    data: [file_path_max]byte
+    FILE_PATH_MAX :: 300
+    data: [FILE_PATH_MAX]byte
     
     file_path: string
     
-    res := win.GetModuleFileNameA(cast(win.Hmodule)nil, transmute(cstring)&data, file_path_max)
+    res := win.GetModuleFileNameA(cast(win.Hmodule)nil, transmute(cstring)&data, FILE_PATH_MAX)
 
     if win.GetLastError() != 0 {
         fmt.sbprint(&temp_log, _format_message("Unable to locate exe, falling back to current directory"))
@@ -115,7 +115,7 @@ _create_log_file :: proc() {
     file_path = fmt.tprintf("%s\\log.txt", file_path)
     
     err: os.Errno
-    log_file.handle,err = os.open(file_path, win.O_CREATE | win.O_WRONLY | win.O_TRUNC)
+    log_file.handle,err = os.open(file_path, os.O_CREATE | os.O_WRONLY | os.O_TRUNC)
     if err != 0 {
         should_log_to_file(false)
         fmt.sbprint(&temp_log, _format_message("Unable to create log file at", file_path, ", disabling log to file"))
