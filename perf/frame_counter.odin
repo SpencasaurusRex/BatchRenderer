@@ -6,7 +6,9 @@ import "vendor:glfw"
 
 import "../log"
 
+
 buffer_size :: 10
+
 
 perf_stats :: struct {
     measurements: [buffer_size]time.Duration,
@@ -16,12 +18,15 @@ perf_stats :: struct {
     start_time: time.Tick,
 }
 
+
 render: perf_stats
 update: perf_stats
+
 
 start_measure :: proc(stats: ^perf_stats) {
     stats.start_time = time.tick_now()
 }
+
 
 end_measure :: proc(stats: ^perf_stats) {
     using stats
@@ -38,21 +43,26 @@ end_measure :: proc(stats: ^perf_stats) {
     }
 }
 
+
 start_update :: proc() {
     start_measure(&update)
 }
+
 
 end_update :: proc() {
     end_measure(&update)
 }
 
+
 start_render :: proc() {
     start_measure(&render)
 }
 
+
 end_render :: proc() {
     end_measure(&render)
 }
+
 
 write_stats :: proc() {
     update_time := time.duration_microseconds(update.average)

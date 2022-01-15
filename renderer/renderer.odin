@@ -7,10 +7,15 @@ import "core:sys/win32"
 import "../log"
 import "../perf"
 import "../trace"
+import "../data"
+
+render_data: data.Render_Data
+
 
 get_proc_address :: proc(p: rawptr, name: cstring) {
     (cast(^rawptr)p)^ = glfw.GetProcAddress(name)
 }
+
 
 init :: proc() -> bool {
     trace.proc_start()
@@ -22,11 +27,13 @@ init :: proc() -> bool {
     gl.ClearColor(0.2, 0.3, 0.3, 1.0)
 
     load_shaders()
+    load_buffers()
 
     return true
 }
 
-load_shaders :: proc() -> u32 {
+
+load_shaders :: proc() {
     program: u32
     fragment_shader := gl.CreateShader(gl.FRAGMENT_SHADER)
     fragment_source := string(#load("shaders/fragment.glsl"))
@@ -34,6 +41,7 @@ load_shaders :: proc() -> u32 {
     fragment_source_data := cstring(raw_data(fragment_source))
     gl.ShaderSource(fragment_shader, 1, &fragment_source_data, &fragment_source_len)
     gl.CompileShader(fragment_shader)
+    info_log(fragment_shader)
 
     vertex_shader := gl.CreateShader(gl.VERTEX_SHADER)
     vertex_source := string(#load("shaders/vertex.glsl"))
@@ -42,26 +50,87 @@ load_shaders :: proc() -> u32 {
     gl.ShaderSource(vertex_shader, 1, &vertex_source_data, &vertex_source_len)
     gl.CompileShader(vertex_shader)
 
-    program = gl.CreateProgram()
-    gl.AttachShader(program, fragment_shader)
-    gl.AttachShader(program, vertex_shader)
-    gl.LinkProgram(program)
+    render_data.program = gl.CreateProgram()
+    gl.AttachShader(render_data.program, fragment_shader)
+    gl.AttachShader(render_data.program, vertex_shader)
+    gl.LinkProgram(render_data.program)
 
-    gl.DetachShader(program, fragment_shader)
-    gl.DetachShader(program, vertex_shader)
+    gl.DetachShader(render_data.program, fragment_shader)
+    gl.DetachShader(render_data.program, vertex_shader)
     gl.DeleteShader(fragment_shader)
     gl.DeleteShader(vertex_shader)
+    
 
-    return program
+    render_data.transform_location = gl.GetUniformLocation(render_data.program, "transform")
+    log.write(render_data.transform_location)
 }
+
+
+when ODIN_DEBUG {
+    info_log :: proc(shader: u32) {
+        len: i32
+        gl.GetShaderiv(shader, gl.INFO_LOG_LENGTH, &len)
+        
+        info_log_data := make([]byte, len)
+        defer delete(info_log_data)
+
+        gl.GetShaderInfoLog(shader, len, &len, &info_log_data[0])
+        info_log := cstring(&info_log_data[0])
+
+        log.write(info_log)
+    }
+}
+else {
+    info_log :: #force_inline proc(_: u32) {}
+}
+
+
+load_buffers :: proc() {
+    gl.GenVertexArrays(1, &render_data.vao)
+    gl.GenBuffers(1, &render_data.vbo)
+    gl.GenBuffers(1, &render_data.ebo)
+
+    gl.BindVertexArray(render_data.vao)
+
+    gl.BindBuffer(gl.ARRAY_BUFFER, render_data.vbo)
+    gl.BufferData(gl.ARRAY_BUFFER, size_of(rectangle_vertices), &rectangle_vertices, gl.STATIC_DRAW)
+    gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 3 * size_of(f32), 0)
+    gl.EnableVertexAttribArray(0)
+
+    gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, render_data.ebo)
+    gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, size_of(rectangle_indices), &rectangle_indices, gl.STATIC_DRAW)
+
+    gl.UseProgram(render_data.program)
+}
+
 
 clear :: proc() {
     gl.Clear(gl.COLOR_BUFFER_BIT)
 }
 
-draw :: proc() {
+
+rectangle_vertices := [?]f32 {
+    0.5, 0.5, 0.0,
+    0.5,-0.5, 0.0,
+   -0.5,-0.5, 0.0,
+   -0.5, 0.5, 0.0,
+}
+
+
+rectangle_indices := [?]u32 {
+    0, 1, 3,
+    1, 2, 3,
+}
+
+
+draw :: proc(game: ^data.Game_Data) {
     clear()
     perf.start_render()
     defer perf.end_render()
     
+    gl.BindVertexArray(render_data.vao)
+    for entity, i in game.entities {
+        gl.UniformMatrix4fv(render_data.transform_location, 1, false, &game.entities[i].transform[0, 0])
+        gl.DrawElements(gl.TRIANGLES, len(rectangle_indices), gl.UNSIGNED_INT, rawptr(uintptr(0)))
+    }
 }

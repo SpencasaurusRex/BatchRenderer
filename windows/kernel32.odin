@@ -2,11 +2,13 @@ package windows
 
 foreign import kernel32 "system:kernel32.lib"
 
+
 @(default_calling_convention = "stdcall")
 foreign kernel32 {
     GetTimeZoneInformation :: proc(info: ^TIME_ZONE_INFORMATION) -> DWORD ---
     GetLocalTime :: proc(lpSystemTime: ^SYSTEMTIME) ---
 }
+
 
 TIME_ZONE_INFORMATION :: struct {
     Bias: LONG,
@@ -17,6 +19,7 @@ TIME_ZONE_INFORMATION :: struct {
     DaylightDate: SYSTEMTIME,
     DaylightBias: LONG,
 }
+
 
 SYSTEMTIME :: struct {
     wYear: WORD,

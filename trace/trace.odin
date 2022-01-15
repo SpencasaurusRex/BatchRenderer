@@ -8,18 +8,23 @@ import "core:time"
 import "../log"
 import win "../windows"
 
+
 output_buffer: strings.Builder
 output_file_handle: os.Handle
 
+
 start_tick: time.Tick
+
 
 record_stack_pointer: int
 record_stack: [dynamic]Trace_Record
+
 
 Trace_Record :: struct {
     name: string,
     start: time.Tick,
 }
+
 
 init :: proc() { 
     if _create_trace_file() {
@@ -35,11 +40,13 @@ init :: proc() {
     start_tick = time.tick_now()
 }
 
+
 stop :: proc() {
     os.seek(output_file_handle, -2, 1)
     os.write_string(output_file_handle, "]}")
     os.flush(output_file_handle)
 }
+
 
 when ODIN_DEBUG {
     proc_start :: proc(loc := #caller_location) {
@@ -56,6 +63,7 @@ when ODIN_DEBUG {
 
         record_stack_pointer += 1
     }
+
 
     proc_end :: proc(loc := #caller_location) {
         if output_file_handle == 0 {
@@ -83,6 +91,7 @@ else {
     proc_start :: #force_inline proc() {}
     proc_end :: #force_inline proc() {}
 }
+
 
 @private
 _create_trace_file :: proc() -> bool {
@@ -115,12 +124,14 @@ _create_trace_file :: proc() -> bool {
     return true
 }
 
+
 @private
 _name :: proc(proc_name, file_path: string) -> string {
     from,to := strings.last_index(file_path, "/"), strings.last_index(file_path, ".")
     file := file_path[from+1:to]
     return fmt.tprintf("%s/%s", file, proc_name)
 }
+
 
 @private
 _record :: proc(name: string, start: time.Tick, dur: time.Duration, thread: int) {
