@@ -78,8 +78,8 @@ init :: proc() -> bool {
 
     game_data.entities = make([dynamic]data.Entity, 1)
     for entity in &game_data.entities {
-        entity.pos.x = rand.float32_range(0, 10)
-        entity.pos.y = rand.float32_range(0, 10)
+        entity.pos.x = rand.float32_range(0, 1)
+        entity.pos.y = rand.float32_range(0, 1)
         entity.rot = rand.float32_range(0, math.PI * 2)
     }
 
@@ -95,7 +95,6 @@ update :: proc(dt: f32) {
     defer perf.end_update()
 
     for entity in &game_data.entities {
-        log.write(entity.rot)
         entity.rot += dt
         update_transform(&entity)
     }
@@ -121,7 +120,7 @@ size_callback :: proc "c" (window: glfw.WindowHandle, width, height: i32) {
 
 
 update_transform :: proc(using entity: ^data.Entity) {
-    transform = rotation(rot) * translation(pos.x, pos.y)
+    transform = translation(pos.x, pos.y) * rotation(rot)
 }
 
 

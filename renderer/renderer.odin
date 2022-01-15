@@ -26,29 +26,31 @@ init :: proc() -> bool {
 
     gl.ClearColor(0.2, 0.3, 0.3, 1.0)
 
-    load_shaders()
+    if !load_shaders() { return false }
     load_buffers()
 
     return true
 }
 
 
-load_shaders :: proc() {
-    program: u32
+load_shaders :: proc() -> bool {
     fragment_shader := gl.CreateShader(gl.FRAGMENT_SHADER)
     fragment_source := string(#load("shaders/fragment.glsl"))
     fragment_source_len := i32(len(fragment_source))
     fragment_source_data := cstring(raw_data(fragment_source))
     gl.ShaderSource(fragment_shader, 1, &fragment_source_data, &fragment_source_len)
     gl.CompileShader(fragment_shader)
-    info_log(fragment_shader)
+
+    if !check_shader(fragment_shader) { return false }
 
     vertex_shader := gl.CreateShader(gl.VERTEX_SHADER)
     vertex_source := string(#load("shaders/vertex.glsl"))
     vertex_source_len := i32(len(vertex_source))
     vertex_source_data := cstring(raw_data(vertex_source))
+
     gl.ShaderSource(vertex_shader, 1, &vertex_source_data, &vertex_source_len)
     gl.CompileShader(vertex_shader)
+    if !check_shader(vertex_shader) { return false }
 
     render_data.program = gl.CreateProgram()
     gl.AttachShader(render_data.program, fragment_shader)
@@ -59,29 +61,53 @@ load_shaders :: proc() {
     gl.DetachShader(render_data.program, vertex_shader)
     gl.DeleteShader(fragment_shader)
     gl.DeleteShader(vertex_shader)
-    
 
-    render_data.transform_location = gl.GetUniformLocation(render_data.program, "transform")
-    log.write(render_data.transform_location)
+    get_uniforms()
+
+    return true
 }
 
 
-when ODIN_DEBUG {
-    info_log :: proc(shader: u32) {
-        len: i32
-        gl.GetShaderiv(shader, gl.INFO_LOG_LENGTH, &len)
+get_uniforms :: proc() {
+    count: i32
+    gl.GetProgramiv(render_data.program, gl.ACTIVE_UNIFORMS, &count)
+
+    uniform_length: i32
+    gl.GetProgramiv(render_data.program, gl.ACTIVE_UNIFORM_MAX_LENGTH, &uniform_length)
+
+    len: i32
+    size: i32
+    _type: u32
+    name := make([]byte, uniform_length)
+    
+    for i: u32 = 0; i < u32(count); i += 1 {
+        gl.GetActiveUniform(render_data.program, i, uniform_length, &len, &size, &_type, &name[0])
+        uniform_name := string(cstring(&name[0]))
         
-        info_log_data := make([]byte, len)
-        defer delete(info_log_data)
+        uniform_location := gl.GetUniformLocation(render_data.program, cstring(&name[0]))
 
-        gl.GetShaderInfoLog(shader, len, &len, &info_log_data[0])
-        info_log := cstring(&info_log_data[0])
-
-        log.write(info_log)
+        render_data.uniforms[uniform_name] = uniform_location
     }
 }
-else {
-    info_log :: #force_inline proc(_: u32) {}
+
+
+check_shader :: proc(shader: u32) -> bool {
+    stat: i32
+    gl.GetShaderiv(shader, gl.COMPILE_STATUS, &stat)
+
+    if (stat == 1) { return true }
+
+    len: i32
+    gl.GetShaderiv(shader, gl.INFO_LOG_LENGTH, &len)
+    
+    info_log_data := make([]byte, len)
+    defer delete(info_log_data)
+
+    gl.GetShaderInfoLog(shader, len, &len, &info_log_data[0])
+    info_log := cstring(&info_log_data[0])
+
+    log.write(args={"Unable to compile shader:\n", info_log}, sep="")
+    return false
 }
 
 
@@ -130,7 +156,7 @@ draw :: proc(game: ^data.Game_Data) {
     
     gl.BindVertexArray(render_data.vao)
     for entity, i in game.entities {
-        gl.UniformMatrix4fv(render_data.transform_location, 1, false, &game.entities[i].transform[0, 0])
+        gl.UniformMatrix4fv(render_data.uniforms["transform"], 1, false, &game.entities[i].transform[0, 0])
         gl.DrawElements(gl.TRIANGLES, len(rectangle_indices), gl.UNSIGNED_INT, rawptr(uintptr(0)))
     }
 }

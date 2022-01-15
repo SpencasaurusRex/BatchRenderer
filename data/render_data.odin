@@ -6,5 +6,5 @@ Render_Data :: struct {
     vbo: u32,
     ebo: u32,
     program: u32,
-    transform_location: i32,
+    uniforms: map[string]i32,
 }
