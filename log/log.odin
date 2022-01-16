@@ -33,6 +33,9 @@ should_log_to_console :: proc(flag: bool) {
 should_log_to_file :: proc(flag: bool) {
     log_file.flag = flag
     if flag {
+        if log_file.handle == 0 {
+            _create_log_file()
+        }
         if log_file.thread == nil {
             log_file.buffer = strings.make_builder(0, 1024)
             log_file.thread = thread.create_and_start(_file_writer_worker)

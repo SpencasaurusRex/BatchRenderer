@@ -27,10 +27,7 @@ Trace_Record :: struct {
 
 
 init :: proc() { 
-    if _create_trace_file() {
-        fmt.println("Unable to create trace output file")
-        return
-    }
+    if !_create_trace_file() { return }
     
     os.write_string(output_file_handle, "{\"otherData\": {},\"traceEvents\":[")
     os.flush(output_file_handle)
@@ -42,7 +39,7 @@ init :: proc() {
 
 
 stop :: proc() {
-    os.seek(output_file_handle, -2, 1)
+    os.seek(output_file_handle, -2, 1) // Remove comma and new line
     os.write_string(output_file_handle, "]}")
     os.flush(output_file_handle)
 }
@@ -71,16 +68,12 @@ when ODIN_DEBUG {
         }
         name := _name(loc.procedure, loc.file_path)
 
-        if record_stack_pointer < 1 {
-            panic("Mismatched trace.proc_end call")
-        }
+        assert(record_stack_pointer >= 1, "Mismatched trace.proc_end call")
         
         record_stack_pointer -= 1
         record := record_stack[record_stack_pointer]
 
-        if record.name != name {
-            panic("Mismatched proc_end call")
-        }
+        assert(record.name == name, "Mismatched proc_end call")
 
         dur := time.tick_since(record.start)
 
@@ -113,10 +106,10 @@ _create_trace_file :: proc() -> bool {
 
 
     file_path = fmt.tprintf("%s\\trace.json", file_path)
-    
+
     err: os.Errno
     output_file_handle,err = os.open(file_path, os.O_CREATE | os.O_WRONLY | os.O_TRUNC)
-    if err != 0 {
+    if err != os.ERROR_NONE {
         log.write("Unable to create trace file at", file_path)
         return false
     }
@@ -138,12 +131,12 @@ _record :: proc(name: string, start: time.Tick, dur: time.Duration, thread: int)
     diff := time.tick_diff(start_tick, start)
     fmt.sbprintln(buf=&output_buffer, args={"{"}, sep="")
     fmt.sbprintln(buf=&output_buffer, args={"\t\"cat\":\"function\","}, sep="")
-    fmt.sbprintln(buf=&output_buffer, args={"\t\"dur\":", time.duration_milliseconds(dur), ','}, sep="")
+    fmt.sbprintln(buf=&output_buffer, args={"\t\"dur\":", time.duration_microseconds(dur), ','}, sep="")
     fmt.sbprintln(buf=&output_buffer, args={"\t\"name\":\"", name, "\","}, sep="")
     fmt.sbprintln(buf=&output_buffer, args={"\t\"ph\":\"X\","}, sep="")
     fmt.sbprintln(buf=&output_buffer, args={"\t\"pid\":0,"}, sep="")
     fmt.sbprintln(buf=&output_buffer, args={"\t\"tid\":", thread, ","}, sep="")
-    fmt.sbprintln(buf=&output_buffer, args={"\t\"ts\":", time.duration_milliseconds(diff)}, sep="")
+    fmt.sbprintln(buf=&output_buffer, args={"\t\"ts\":", time.duration_microseconds(diff)}, sep="")
     fmt.sbprintln(buf=&output_buffer, args={"},"}, sep="")
     
     os.write_string(output_file_handle, strings.to_string(output_buffer))

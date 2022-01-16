@@ -46,14 +46,12 @@ main :: proc() {
         return
     }
 
-    ok := renderer.init()
-    if !ok {
+    if !renderer.init() {
         log.write("Unable to initialize renderer")
         return
     }
 
-    ok = init()
-    if !ok {
+    if !init() {
         log.write("Unable to initialize game")
     }
 

@@ -71,6 +71,6 @@ open :: proc(window_name: string, width, height: i32, mode: Window_Mode) -> bool
     return true
 }
 
-_window_proc :: proc "std" (window: win32.Hwnd, msg: u32, w_param: win32.Wparam, l_param: win32.Lparam) -> win32.Lresult {
-    return win32.def_window_proc_a(window, msg, w_param, l_param)
+_window_proc :: proc "std" (window: win32.Hwnd, message: u32, w_param: win32.Wparam, l_param: win32.Lparam) -> win32.Lresult {
+    return win32.def_window_proc_a(window, message, w_param, l_param)
 }
