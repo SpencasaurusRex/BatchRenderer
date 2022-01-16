@@ -5,8 +5,7 @@
                     { "name": "renderer", "path": "c:/projects/BatchRenderer/renderer"},
                     { "name": "windows", "path": "c:/projects/BatchRenderer/windows"},
                     { "name": "trace", "path": "c:/projects/BatchRenderer/trace"},
-                    { "name": "rand", "path": "c:/projects/Odin/core/math/rand"},
-                    { "name": "OpenGL", "path": "c:/projects/Odin/vendors/OpenGL"}
+                    { "name": "window", "path": "c:/projects/BatchRenderer/window"}
                 ],
     "thread_pool_count": 4,
     "enable_semantic_tokens": false,

@@ -27,6 +27,7 @@ init :: proc() -> bool {
     gl.ClearColor(0.2, 0.3, 0.3, 1.0)
 
     if !load_shaders() { return false }
+    get_uniforms()
     load_buffers()
 
     return true
@@ -61,8 +62,6 @@ load_shaders :: proc() -> bool {
     gl.DetachShader(render_data.program, vertex_shader)
     gl.DeleteShader(fragment_shader)
     gl.DeleteShader(vertex_shader)
-
-    get_uniforms()
 
     return true
 }
@@ -130,11 +129,6 @@ load_buffers :: proc() {
 }
 
 
-clear :: proc() {
-    gl.Clear(gl.COLOR_BUFFER_BIT)
-}
-
-
 rectangle_vertices := [?]f32 {
     0.5, 0.5, 0.0,
     0.5,-0.5, 0.0,
@@ -150,7 +144,7 @@ rectangle_indices := [?]u32 {
 
 
 draw :: proc(game: ^data.Game_Data) {
-    clear()
+    gl.Clear(gl.COLOR_BUFFER_BIT)
     perf.start_render()
     defer perf.end_render()
     

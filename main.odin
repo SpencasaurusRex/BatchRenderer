@@ -36,6 +36,7 @@ main :: proc() {
 
     log.write("Creating window", res_x, "x", res_y)
     window = glfw.CreateWindow(res_x, res_y, "Batch Renderer", nil, nil)
+    glfw.SwapInterval(1)
     glfw.MakeContextCurrent(window)
     glfw.SetKeyCallback(window, key_callback)
     glfw.SetFramebufferSizeCallback(window, size_callback)
@@ -76,7 +77,7 @@ init :: proc() -> bool {
     
     log.write("Init")
 
-    game_data.entities = make([dynamic]data.Entity, 1)
+    game_data.entities = make([dynamic]data.Entity, 100)
     for entity in &game_data.entities {
         entity.pos.x = rand.float32_range(0, 1)
         entity.pos.y = rand.float32_range(0, 1)
