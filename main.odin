@@ -20,7 +20,6 @@ update_count: int
 
 game_data: data.Game_Data
 
-
 main :: proc() {
     when ODIN_DEBUG {
         log.should_log_to_console(true)
