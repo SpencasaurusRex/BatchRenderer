@@ -1,5 +1,7 @@
 package windows
 
+import "core:sys/win32"
+
 foreign import kernel32 "system:kernel32.lib"
 
 
