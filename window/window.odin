@@ -76,7 +76,7 @@ open :: proc(window_name: string, width, height: i32, mode: Window_Mode) -> bool
         return false
     }
 
-    device_context = get_dc(Hwnd(uintptr(0)))
+    device_context = get_dc(window_handle)
     if device_context == Hdc(uintptr(0)) {
         log.write("Failed to get DC:", get_last_error())
         return false
@@ -103,10 +103,8 @@ open :: proc(window_name: string, width, height: i32, mode: Window_Mode) -> bool
         log.write("Unable to describe pixel format:", get_last_error())
         return false
     }
-    
-    log.write(suggested_format)
 
-    if set_pixel_format(device_context, format_index, &suggested_format) != true {
+    if !set_pixel_format(device_context, format_index, &suggested_format) {
         log.write("Unable to set pixel format:", get_last_error())
         return false
     }

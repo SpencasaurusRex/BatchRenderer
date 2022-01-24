@@ -76,6 +76,7 @@ write_to_file :: proc(buffer: strings.Builder) {
 @private
 WRITE_FREQUENCY:: 10
 _file_writer_worker :: proc(thread: ^thread.Thread) {
+    // TODO: Need to implement a mutex here, technically there is a race condition
     for {
         write_to_file(log_file.buffer)
         strings.reset_builder(&log_file.buffer)
