@@ -11,6 +11,7 @@ should_close: bool
 device_context: win32.Hdc
 opengl_context: win32.Hglrc
 window_handle: win32.Hwnd
+prev_window_placement: win32.Window_Placement
 
 Window_Mode :: enum {
     Windowed,
@@ -127,7 +128,6 @@ open :: proc(window_name: string, width, height: i32, mode: Window_Mode) -> bool
     return true
 }
 
-prev_window_placement: win32.Window_Placement
 
 toggle_fullscreen :: proc() {
     if should_close {

@@ -5,6 +5,7 @@ import "core:fmt"
 import "core:strings"
 import "core:os"
 import "core:thread"
+import "core:sync"
 
 import win "../windows"
 
@@ -21,6 +22,7 @@ log_file_fields :: struct {
     handle: os.Handle,
     buffer: strings.Builder,
     thread: ^thread.Thread,
+    mutex: sync.Mutex,
 }
 log_file: log_file_fields
 
@@ -39,12 +41,14 @@ should_log_to_file :: proc(flag: bool) {
         if log_file.thread == nil {
             log_file.buffer = strings.make_builder(0, 1024)
             log_file.thread = thread.create_and_start(_file_writer_worker)
+            sync.mutex_init(&log_file.mutex)
         }
     }
     else if log_file.thread != nil {
         thread.join(log_file.thread)
         log_file.thread = nil
         strings.destroy_builder(&log_file.buffer)
+        sync.mutex_destroy(&log_file.mutex)
     }
 }
 
@@ -60,6 +64,8 @@ write_to_file :: proc(buffer: strings.Builder) {
         _create_log_file()
     }
     
+    sync.mutex_lock(&log_file.mutex)
+    
     _, err := os.write_string(log_file.handle, strings.to_string(buffer))
     if err != os.ERROR_NONE {
         should_log_to_file(false)
@@ -70,16 +76,17 @@ write_to_file :: proc(buffer: strings.Builder) {
         should_log_to_file(false)
         write("Failure to flush string to file, disabling log to file")
     }
+    strings.reset_builder(&log_file.buffer)
+
+    sync.mutex_unlock(&log_file.mutex)
 }
 
 
 @private
 WRITE_FREQUENCY:: 10
 _file_writer_worker :: proc(thread: ^thread.Thread) {
-    // TODO: Need to implement a mutex here, technically there is a race condition
     for {
         write_to_file(log_file.buffer)
-        strings.reset_builder(&log_file.buffer)
         time.sleep(time.Millisecond * WRITE_FREQUENCY)
     }
 }
@@ -88,7 +95,9 @@ _file_writer_worker :: proc(thread: ^thread.Thread) {
 @private
 _write_formatted :: proc(message: string) {
     if log_file.flag {
+        sync.mutex_lock(&log_file.mutex)
         fmt.sbprint(&log_file.buffer, message)
+        sync.mutex_unlock(&log_file.mutex)
     }
     if log_console.flag {
         fmt.print(message)
