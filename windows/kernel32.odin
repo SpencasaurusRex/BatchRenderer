@@ -4,7 +4,6 @@ import "core:sys/win32"
 
 foreign import kernel32 "system:kernel32.lib"
 
-
 @(default_calling_convention = "stdcall")
 foreign kernel32 {
     GetTimeZoneInformation :: proc(info: ^TIME_ZONE_INFORMATION) -> DWORD ---

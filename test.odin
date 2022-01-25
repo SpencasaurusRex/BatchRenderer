@@ -17,5 +17,6 @@ main :: proc() {
     for !window.should_close {
         time.sleep(time.Millisecond * 1)
         window.poll_events()
+        window.toggle_fullscreen()
     }
 }
