@@ -68,7 +68,7 @@ open :: proc(window_name: string, width, height: i32, mode: Window_Mode) -> bool
     should_close = true
 
     device_context = get_dc(window_handle)
-    if device_context == Hdc(uintptr(0)) {
+    if device_context == Hdc(nil) {
         log.write("Failed to get DC:", get_last_error())
         return false
     }
@@ -113,63 +113,10 @@ open :: proc(window_name: string, width, height: i32, mode: Window_Mode) -> bool
     
     should_close = false
     if mode == .Fullscreen {
-        make_fullscreen()
+        toggle_fullscreen()
     }
     
     return true
-}
-
-
-make_fullscreen :: proc() {
-    if should_close {
-        return
-    }
-
-    style := win32.get_window_long_ptr_a(window_handle, win32.GWL_STYLE)
-    if style & win32.WS_OVERLAPPEDWINDOW == 0 {
-        return
-    }
-
-    prev_window_placement.length = size_of(win32.Window_Placement)
-    
-    if !win32.get_window_placement(window_handle, &prev_window_placement) {
-        log.write("Unable to get window placement:", win32.get_last_error())
-    }
-
-    monitor := win32.monitor_from_window(window_handle, win32.MONITOR_DEFAULTTONEAREST)// MONITOR_DEFAULTTOPRIMARY
-    if monitor == nil {
-        log.write("Unable to get monitor:", win32.get_last_error())
-        return
-    }
-
-    monitor_info: win32.Monitor_Info
-    monitor_info.size = size_of(win32.Monitor_Info)
-    if !win32.get_monitor_info_a(monitor, &monitor_info) {
-        log.write("Unable to get monitor info:", win32.get_last_error())
-        return
-    }
-
-    win32.set_window_long_ptr_a(window_handle, win32.GWL_STYLE, style & ~win32.Long_Ptr(win32.WS_OVERLAPPEDWINDOW))
-    rect := monitor_info.monitor
-    win32.set_window_pos(window_handle, win32.Hwnd(uintptr(0)), 
-        rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top,
-        win32.SWP_NOOWNERZORDER | win32.SWP_FRAMECHANGED)
-}
-
-
-make_windowed :: proc() {
-    if should_close {
-        return
-    }
-
-    style := win32.get_window_long_ptr_a(window_handle, win32.GWL_STYLE)
-    if style & win32.WS_OVERLAPPEDWINDOW != 0 {
-        return
-    }
-    
-    win32.set_window_long_ptr_a(window_handle, win32.GWL_STYLE, style | win32.WS_OVERLAPPEDWINDOW)
-    win32.set_window_placement(window_handle, &prev_window_placement)
-    win32.set_window_pos(window_handle, nil, 0, 0, 0, 0, win32.SWP_NOMOVE | win32.SWP_NOSIZE | win32.SWP_NOZORDER | win32.SWP_NOOWNERZORDER | win32.SWP_FRAMECHANGED)
 }
 
 
@@ -180,10 +127,37 @@ toggle_fullscreen :: proc() {
 
     style := win32.get_window_long_ptr_a(window_handle, win32.GWL_STYLE)
     if style & win32.WS_OVERLAPPEDWINDOW == 0 {
-        make_windowed()
+        // Set windowed
+        win32.set_window_long_ptr_a(window_handle, win32.GWL_STYLE, style | win32.WS_OVERLAPPEDWINDOW)
+        win32.set_window_placement(window_handle, &prev_window_placement)
+        win32.set_window_pos(window_handle, nil, 0, 0, 0, 0, win32.SWP_NOMOVE | win32.SWP_NOSIZE | win32.SWP_NOZORDER | win32.SWP_NOOWNERZORDER | win32.SWP_FRAMECHANGED)
     }
     else {
-        make_fullscreen()
+        // Set fullscreen
+        prev_window_placement.length = size_of(win32.Window_Placement)
+        
+        if !win32.get_window_placement(window_handle, &prev_window_placement) {
+            log.write("Unable to get window placement:", win32.get_last_error())
+        }
+
+        monitor := win32.monitor_from_window(window_handle, win32.MONITOR_DEFAULTTONEAREST)// MONITOR_DEFAULTTOPRIMARY
+        if monitor == nil {
+            log.write("Unable to get monitor:", win32.get_last_error())
+            return
+        }
+
+        monitor_info: win32.Monitor_Info
+        monitor_info.size = size_of(win32.Monitor_Info)
+        if !win32.get_monitor_info_a(monitor, &monitor_info) {
+            log.write("Unable to get monitor info:", win32.get_last_error())
+            return
+        }
+
+        win32.set_window_long_ptr_a(window_handle, win32.GWL_STYLE, style & ~win32.Long_Ptr(win32.WS_OVERLAPPEDWINDOW))
+        rect := monitor_info.monitor
+        win32.set_window_pos(window_handle, win32.Hwnd(uintptr(0)), 
+            rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top,
+            win32.SWP_NOOWNERZORDER | win32.SWP_FRAMECHANGED)
     }
 }
 
