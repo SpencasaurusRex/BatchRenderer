@@ -16,7 +16,6 @@ prev_window_placement: win32.Window_Placement
 Window_Mode :: enum {
     Windowed,
     Fullscreen,
-    BorderlessFullscreen,
 }
 
 open :: proc(window_name: string, width, height: i32, mode: Window_Mode) -> bool {
@@ -46,20 +45,8 @@ open :: proc(window_name: string, width, height: i32, mode: Window_Mode) -> bool
         return false
     }
 
-    ex_style: u32
-    style: u32
-
-    switch (mode) {
-        case Window_Mode.Windowed:
-            ex_style = 0
-            style = WS_OVERLAPPEDWINDOW | WS_VISIBLE
-        case Window_Mode.Fullscreen:
-            ex_style = 0
-            style = WS_MAXIMIZE | WS_BORDER | WS_VISIBLE// TODO
-        case Window_Mode.BorderlessFullscreen:
-            ex_style = 0
-            style = WS_MAXIMIZE | WS_VISIBLE// TODO
-    }
+    ex_style: u32 = 0
+    style: u32 = WS_OVERLAPPEDWINDOW | WS_VISIBLE
 
     title := strings.clone_to_cstring(window_name, context.temp_allocator)
 
@@ -98,18 +85,18 @@ open :: proc(window_name: string, width, height: i32, mode: Window_Mode) -> bool
 
     format_index := choose_pixel_format(device_context, &desired_format)
     if format_index == 0 {
-        log.write("Unable to find a matching pixel format")
+        log.write("Failed to find a matching pixel format", get_last_error())
         return false
     }
 
     suggested_format: Pixel_Format_Descriptor
     if describe_pixel_format(device_context, format_index, size_of(suggested_format), &suggested_format) == 0 {
-        log.write("Unable to describe pixel format:", get_last_error())
+        log.write("Failed to describe pixel format:", get_last_error())
         return false
     }
 
     if !set_pixel_format(device_context, format_index, &suggested_format) {
-        log.write("Unable to set pixel format:", get_last_error())
+        log.write("Failed to set pixel format:", get_last_error())
         return false
     }
 
@@ -120,12 +107,69 @@ open :: proc(window_name: string, width, height: i32, mode: Window_Mode) -> bool
     }
     
     if !make_current(device_context, opengl_context) {
-        log.write("Unable to make context current:", get_last_error())
+        log.write("Failed to make context current:", get_last_error())
         return false
     }
     
     should_close = false
+    if mode == .Fullscreen {
+        make_fullscreen()
+    }
+    
     return true
+}
+
+
+make_fullscreen :: proc() {
+    if should_close {
+        return
+    }
+
+    style := win32.get_window_long_ptr_a(window_handle, win32.GWL_STYLE)
+    if style & win32.WS_OVERLAPPEDWINDOW == 0 {
+        return
+    }
+
+    prev_window_placement.length = size_of(win32.Window_Placement)
+    
+    if !win32.get_window_placement(window_handle, &prev_window_placement) {
+        log.write("Unable to get window placement:", win32.get_last_error())
+    }
+
+    monitor := win32.monitor_from_window(window_handle, win32.MONITOR_DEFAULTTONEAREST)// MONITOR_DEFAULTTOPRIMARY
+    if monitor == nil {
+        log.write("Unable to get monitor:", win32.get_last_error())
+        return
+    }
+
+    monitor_info: win32.Monitor_Info
+    monitor_info.size = size_of(win32.Monitor_Info)
+    if !win32.get_monitor_info_a(monitor, &monitor_info) {
+        log.write("Unable to get monitor info:", win32.get_last_error())
+        return
+    }
+
+    win32.set_window_long_ptr_a(window_handle, win32.GWL_STYLE, style & ~win32.Long_Ptr(win32.WS_OVERLAPPEDWINDOW))
+    rect := monitor_info.monitor
+    win32.set_window_pos(window_handle, win32.Hwnd(uintptr(0)), 
+        rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top,
+        win32.SWP_NOOWNERZORDER | win32.SWP_FRAMECHANGED)
+}
+
+
+make_windowed :: proc() {
+    if should_close {
+        return
+    }
+
+    style := win32.get_window_long_ptr_a(window_handle, win32.GWL_STYLE)
+    if style & win32.WS_OVERLAPPEDWINDOW != 0 {
+        return
+    }
+    
+    win32.set_window_long_ptr_a(window_handle, win32.GWL_STYLE, style | win32.WS_OVERLAPPEDWINDOW)
+    win32.set_window_placement(window_handle, &prev_window_placement)
+    win32.set_window_pos(window_handle, nil, 0, 0, 0, 0, win32.SWP_NOMOVE | win32.SWP_NOSIZE | win32.SWP_NOZORDER | win32.SWP_NOOWNERZORDER | win32.SWP_FRAMECHANGED)
 }
 
 
@@ -133,38 +177,13 @@ toggle_fullscreen :: proc() {
     if should_close {
         return
     }
+
     style := win32.get_window_long_ptr_a(window_handle, win32.GWL_STYLE)
-
-    if style & win32.WS_OVERLAPPEDWINDOW > 0 {
-        prev_window_placement.length = size_of(win32.Window_Placement)
-        
-        if !win32.get_window_placement(window_handle, &prev_window_placement) {
-            log.write("Unable to get window placement:", win32.get_last_error())
-        }
-
-        monitor := win32.monitor_from_window(window_handle, win32.MONITOR_DEFAULTTONEAREST)// MONITOR_DEFAULTTOPRIMARY
-        if monitor == nil {
-            log.write("Unable to get monitor:", win32.get_last_error())
-            return
-        }
-
-        monitor_info: win32.Monitor_Info
-        monitor_info.size = size_of(win32.Monitor_Info)
-        if !win32.get_monitor_info_a(monitor, &monitor_info) {
-            log.write("Unable to get monitor info:", win32.get_last_error())
-            return
-        }
-
-        win32.set_window_long_ptr_a(window_handle, win32.GWL_STYLE, style & ~win32.Long_Ptr(win32.WS_OVERLAPPEDWINDOW))
-        rect := monitor_info.monitor
-        win32.set_window_pos(window_handle, win32.Hwnd(uintptr(0)), 
-            rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top,
-            win32.SWP_NOOWNERZORDER | win32.SWP_FRAMECHANGED)
+    if style & win32.WS_OVERLAPPEDWINDOW == 0 {
+        make_windowed()
     }
     else {
-        win32.set_window_long_ptr_a(window_handle, win32.GWL_STYLE, style | win32.WS_OVERLAPPEDWINDOW)
-        win32.set_window_placement(window_handle, &prev_window_placement)
-        win32.set_window_pos(window_handle, nil, 0, 0, 0, 0, win32.SWP_NOMOVE | win32.SWP_NOSIZE | win32.SWP_NOZORDER | win32.SWP_NOOWNERZORDER | win32.SWP_FRAMECHANGED)
+        make_fullscreen()
     }
 }
 

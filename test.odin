@@ -16,11 +16,10 @@ main :: proc() {
         log.should_log_to_file(true)
     }
 
-    window.open("Testing window name", 800, 600, window.Window_Mode.Windowed)
+    window.open("Testing window name", 800, 600, window.Window_Mode.Fullscreen)
 
     for !window.should_close {
         time.sleep(time.Millisecond * 1)
         window.poll_events()
-        window.toggle_fullscreen()
     }
 }
