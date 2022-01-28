@@ -144,11 +144,11 @@ _create_log_file :: proc() {
 
 @private
 _format_message :: proc(args: ..any, sep := " ") -> string {
-    t: winext.SYSTEMTIME
+    t: win.SYSTEMTIME
     winext.GetLocalTime(&t)
     
     message := fmt.tprint(args=args, sep=sep)
-    line := fmt.tprintf("%2d:%2d:%2d.%3d: %s\n", t.wHour, t.wMinute, t.wSecond, t.wMilliseconds, message)
+    line := fmt.tprintf("%2d:%2d:%2d.%3d: %s\n", t.hour, t.minute, t.second, t.milliseconds, message)
 
     return line
 }
