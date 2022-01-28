@@ -5,6 +5,7 @@ import "core:sys/win32"
 import "core:strings"
 import "core:fmt"
 
+import "../gl"
 import "../log"
 
 should_close: bool
@@ -174,6 +175,11 @@ poll_events :: proc() {
     }
 }
 
+draw :: proc() {
+    gl.Clear(gl.COLOR_BUFFER_BIT)
+    win32.swap_buffers(device_context)
+}
+
 _window_proc :: proc "std" (window: win32.Hwnd, message: u32, w_param: win32.Wparam, l_param: win32.Lparam) -> win32.Lresult {
     context = runtime.default_context()
 
@@ -184,7 +190,9 @@ _window_proc :: proc "std" (window: win32.Hwnd, message: u32, w_param: win32.Wpa
             fallthrough
         case win32.WM_QUIT:
             should_close = true
-        
+        case win32.WM_SIZE:
+            gl.Viewport(0, 0, u32(win32.LOWORD_L(l_param)), u32(win32.HIWORD_L(l_param)))
+            draw()
     }
 
 

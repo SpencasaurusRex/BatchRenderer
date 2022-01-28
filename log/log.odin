@@ -7,7 +7,9 @@ import "core:os"
 import "core:thread"
 import "core:sync"
 
-import win "../windows"
+import win "core:sys/windows"
+import win32 "core:sys/win32"
+import winext "../winext"
 
 @private
 log_console_fields :: struct {
@@ -114,7 +116,7 @@ _create_log_file :: proc() {
     
     file_path: string
     
-    res := win.GetModuleFileNameA(cast(win.Hmodule)nil, transmute(cstring)&data, FILE_PATH_MAX)
+    res := win32.get_module_file_name_a(cast(win32.Hmodule)nil, transmute(cstring)&data, FILE_PATH_MAX)
 
     if win.GetLastError() != 0 {
         fmt.sbprint(&temp_log, _format_message("Unable to locate exe, falling back to current directory"))
@@ -142,8 +144,8 @@ _create_log_file :: proc() {
 
 @private
 _format_message :: proc(args: ..any, sep := " ") -> string {
-    t: win.SYSTEMTIME
-    win.GetLocalTime(&t)
+    t: winext.SYSTEMTIME
+    winext.GetLocalTime(&t)
     
     message := fmt.tprint(args=args, sep=sep)
     line := fmt.tprintf("%2d:%2d:%2d.%3d: %s\n", t.wHour, t.wMinute, t.wSecond, t.wMilliseconds, message)
