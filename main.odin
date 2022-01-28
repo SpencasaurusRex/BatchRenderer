@@ -102,6 +102,8 @@ update :: proc(dt: f32) {
     }
 
     update_count += 1
+
+    
 }
 
 

@@ -176,11 +176,17 @@ poll_events :: proc() {
 
 _window_proc :: proc "std" (window: win32.Hwnd, message: u32, w_param: win32.Wparam, l_param: win32.Lparam) -> win32.Lresult {
     context = runtime.default_context()
-    
-    if message == win32.WM_CLOSE || message == win32.WM_QUIT {
-        log.write("Exiting")
-        should_close = true
+
+    switch message {
+        case win32.WM_DESTROY:
+            fallthrough
+        case win32.WM_CLOSE:
+            fallthrough
+        case win32.WM_QUIT:
+            should_close = true
+        
     }
+
 
     return win32.def_window_proc_a(window, message, w_param, l_param)
 }
