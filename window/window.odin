@@ -34,7 +34,7 @@ open :: proc(window_name: string, width, height: i32, mode: Window_Mode) -> bool
     class.wnd_extra = 0
     class.instance = Hinstance(hmodule)
     class.icon = Hicon(nil)
-    class.cursor = Hcursor(nil)
+    class.cursor = load_cursor_a(nil, win32.IDC_ARROW)
     class.background = Hbrush(nil)
     class.menu_name = nil
     class.class_name = CLASS_NAME
