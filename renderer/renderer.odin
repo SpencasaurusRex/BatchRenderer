@@ -1,8 +1,8 @@
 package renderer
 
-import "vendor:glfw"
-import gl "vendor:OpenGL"
 import "core:sys/win32"
+
+import gl "vendor:OpenGL"
 
 import "../log"
 import "../perf"
@@ -11,17 +11,11 @@ import "../data"
 
 render_data: data.Render_Data
 
-get_proc_address :: proc(p: rawptr, name: cstring) {
-    (cast(^rawptr)p)^ = glfw.GetProcAddress(name)
-}
-
 init :: proc() -> bool {
     trace.proc_start()
     defer trace.proc_end()
 
-    gl.load_up_to(4, 6, get_proc_address)
-    log.write(args={"Loaded OpenGL ", gl.loaded_up_to[0], ".", gl.loaded_up_to[1]}, sep="")
-
+    gl.load_up_to(3, 1, _get_proc_address)
     gl.ClearColor(0.2, 0.3, 0.3, 1.0)
 
     if !load_shaders() { return false }
@@ -142,4 +136,23 @@ draw :: proc(game: ^data.Game_Data) {
         gl.UniformMatrix4fv(render_data.uniforms["transform"], 1, false, &game.entities[i].transform[0, 0])
         gl.DrawElements(gl.TRIANGLES, len(rectangle_indices), gl.UNSIGNED_INT, rawptr(uintptr(0)))
     }
+}
+
+@private
+_opengl_module: win32.Hmodule
+
+@private
+_get_proc_address :: proc(p: rawptr, name: cstring) {
+    ptr :: #force_inline proc(val: int) -> rawptr {
+        return rawptr(uintptr(val))
+    }
+    
+    fptr := win32.get_gl_proc_address(name)
+    if fptr == nil || fptr == rawptr(~uintptr(0)) || fptr == ptr(1) || fptr == ptr(2) || fptr == ptr(3)  {
+        if _opengl_module == nil {
+            _opengl_module = win32.load_library_a("opengl32.dll")
+        }
+        fptr = win32.get_proc_address(_opengl_module, name)
+    }
+    (^rawptr)(p)^ = fptr
 }

@@ -11,10 +11,7 @@ import "renderer"
 import "trace"
 import "data"
 
-import "vendor:glfw"
-import gl "vendor:OpenGL"
-// import "window"
-// import "gl"
+import "window"
 
 update_count: int
 
@@ -24,8 +21,6 @@ update_stats: perf.Frame_Stats
 render_stats: perf.Frame_Stats
 FRAME_STATS_COUNT :: 10
 
-window: glfw.WindowHandle
-
 main :: proc() {
     log.should_log_to_console(true)
     log.should_log_to_file(true)
@@ -34,19 +29,9 @@ main :: proc() {
     res_x, res_y : i32 = 800,600
     
     log.write("Creating window", res_x, "x", res_y)
-    glfw.Init()
-    // window.open("Batch Renderer", res_x, res_y, .Windowed)
     
-    glfw.SwapInterval(1)
-    window = glfw.CreateWindow(res_x, res_y, "Batch Renderer", nil, nil)
-    glfw.MakeContextCurrent(window)
-    glfw.SetKeyCallback(window, key_callback)
-    glfw.SetFramebufferSizeCallback(window, size_callback)
-
-    if window == nil {
-        log.write("Unable to create window")
-        return
-    }
+    window.open("Batch Renderer", res_x, res_y, .Windowed)
+    window.set_key_callback(key_callback)
 
     if !renderer.init() {
         log.write("Unable to initialize renderer")
@@ -57,13 +42,13 @@ main :: proc() {
         log.write("Unable to initialize game")
     }
 
-    previous_time := f32(glfw.GetTime())
+    previous_time := time.now()
 
-    for !glfw.WindowShouldClose(window) {
-        new_time := f32(glfw.GetTime())
+    for !window.should_close {
+        new_time := time.now()
         
         perf.start_measure(&update_stats)
-        update(new_time - previous_time)
+        update(time.duration_seconds(time.diff(previous_time, new_time)))
         perf.end_measure(&update_stats)
         
         previous_time = new_time
@@ -72,8 +57,8 @@ main :: proc() {
         renderer.draw(&game_data)
         perf.end_measure(&render_stats)
 
-        glfw.SwapBuffers(window)
-        glfw.PollEvents()
+        window.swap_buffers()
+        window.poll_events()
     }
 }
 
@@ -98,9 +83,9 @@ init :: proc() -> bool {
 }
 
 
-update :: proc(dt: f32) {
+update :: proc(dt: f64) {
     for entity in &game_data.entities {
-        entity.rot += dt
+        entity.rot += f32(dt)
         update_transform(&entity)
     }
 
@@ -112,16 +97,21 @@ update :: proc(dt: f32) {
 }
 
 
-key_callback :: proc "c" (window: glfw.WindowHandle, key, scancode, action, modes: i32) {
-    if key == glfw.KEY_ESCAPE && action == glfw.PRESS {
-        glfw.SetWindowShouldClose(window, true)
-    }
+key_callback :: proc(key_code: int, pressed: bool) {
+    log.write(key_code, pressed)
 }
 
 
-size_callback :: proc "c" (window: glfw.WindowHandle, width, height: i32) {
-    gl.Viewport(0, 0, width, height)
-}
+// key_callback :: proc "c" (window: glfw.WindowHandle, key, scancode, action, modes: i32) {
+//     if key == glfw.KEY_ESCAPE && action == glfw.PRESS {
+//         glfw.SetWindowShouldClose(window, true)
+//     }
+// }
+
+
+// size_callback :: proc "c" (window: glfw.WindowHandle, width, height: i32) {
+//     gl.Viewport(0, 0, width, height)
+// }
 
 
 update_transform :: proc(using entity: ^data.Entity) {

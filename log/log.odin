@@ -23,6 +23,7 @@ log_file_fields :: struct {
     flag: bool,
     handle: os.Handle,
     buffer: strings.Builder,
+    // TODO: This doesn't need to be a separate thread.. we can just batch writes together
     thread: ^thread.Thread,
     mutex: sync.Mutex,
 }

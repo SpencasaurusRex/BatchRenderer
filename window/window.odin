@@ -5,7 +5,8 @@ import "core:sys/win32"
 import "core:strings"
 import "core:fmt"
 
-import "../gl"
+import gl "vendor:OpenGL"
+
 import "../log"
 
 should_close: bool
@@ -174,9 +175,11 @@ poll_events :: proc() {
 
         switch(message.message) {
             case win32.WM_SIZE:
-                gl.Viewport(0, 0, u32(win32.LOWORD_L(message.lparam)), u32(win32.HIWORD_L(message.lparam)))
-                draw()
+                // TODO: Need to wrap this into resize callback
+                gl.Viewport(0, 0, i32(win32.LOWORD_L(message.lparam)), i32(win32.HIWORD_L(message.lparam)))
+                // TODO: redraw
         
+            // TODO: Need to handle Alt+F4 & other key combos
             case win32.WM_KEYDOWN:
                 fallthrough
             case win32.WM_KEYUP:
@@ -199,8 +202,7 @@ poll_events :: proc() {
     }
 }
 
-draw :: proc() {
-    gl.Clear(gl.COLOR_BUFFER_BIT)
+swap_buffers :: proc() {
     win32.swap_buffers(device_context)
 }
 
