@@ -11,11 +11,9 @@ import "../data"
 
 render_data: data.Render_Data
 
-
 get_proc_address :: proc(p: rawptr, name: cstring) {
     (cast(^rawptr)p)^ = glfw.GetProcAddress(name)
 }
-
 
 init :: proc() -> bool {
     trace.proc_start()
@@ -32,7 +30,6 @@ init :: proc() -> bool {
 
     return true
 }
-
 
 load_shaders :: proc() -> bool {
     fragment_shader := gl.CreateShader(gl.FRAGMENT_SHADER)
@@ -66,7 +63,6 @@ load_shaders :: proc() -> bool {
     return true
 }
 
-
 get_uniforms :: proc() {
     count: i32
     gl.GetProgramiv(render_data.program, gl.ACTIVE_UNIFORMS, &count)
@@ -89,7 +85,6 @@ get_uniforms :: proc() {
     }
 }
 
-
 check_shader :: proc(shader: u32) -> bool {
     stat: i32
     gl.GetShaderiv(shader, gl.COMPILE_STATUS, &stat)
@@ -109,7 +104,6 @@ check_shader :: proc(shader: u32) -> bool {
     return false
 }
 
-
 load_buffers :: proc() {
     gl.GenVertexArrays(1, &render_data.vao)
     gl.GenBuffers(1, &render_data.vbo)
@@ -128,7 +122,6 @@ load_buffers :: proc() {
     gl.UseProgram(render_data.program)
 }
 
-
 rectangle_vertices := [?]f32 {
     0.5, 0.5, 0.0,
     0.5,-0.5, 0.0,
@@ -136,17 +129,13 @@ rectangle_vertices := [?]f32 {
    -0.5, 0.5, 0.0,
 }
 
-
 rectangle_indices := [?]u32 {
     0, 1, 3,
     1, 2, 3,
 }
 
-
 draw :: proc(game: ^data.Game_Data) {
     gl.Clear(gl.COLOR_BUFFER_BIT)
-    perf.start_render()
-    defer perf.end_render()
     
     gl.BindVertexArray(render_data.vao)
     for entity, i in game.entities {

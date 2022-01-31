@@ -6,7 +6,7 @@ import "vendor:glfw"
 
 import "../log"
 
-Perf_Stats :: struct {
+Frame_Stats :: struct {
     measurements: [dynamic]time.Duration,
     current_measure_index: int,
     total: time.Duration,
@@ -14,15 +14,15 @@ Perf_Stats :: struct {
     start_time: time.Tick,
 }
 
-init :: proc(stats: ^Perf_Stats, size: int) {
+init :: proc(stats: ^Frame_Stats, size: int) {
     stats.measurements = make([dynamic]time.Duration, size)
 }
 
-start_measure :: proc(stats: ^Perf_Stats) {
+start_measure :: proc(stats: ^Frame_Stats) {
     stats.start_time = time.tick_now()
 }
 
-end_measure :: proc(stats: ^Perf_Stats) {
+end_measure :: proc(stats: ^Frame_Stats) {
     using stats
     diff := time.tick_diff(start_time, time.tick_now())
     total -= measurements[current_measure_index]

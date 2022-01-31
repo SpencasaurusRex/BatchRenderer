@@ -27,4 +27,3 @@ main :: proc() {
         time.sleep(time.Millisecond * 1)
     }
 }
-

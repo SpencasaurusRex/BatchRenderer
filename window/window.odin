@@ -120,7 +120,6 @@ open :: proc(window_name: string, width, height: i32, mode: Window_Mode) -> bool
     return true
 }
 
-
 toggle_fullscreen :: proc() {
     if should_close {
         return
@@ -156,7 +155,7 @@ toggle_fullscreen :: proc() {
 
         win32.set_window_long_ptr_a(window_handle, win32.GWL_STYLE, style & ~win32.Long_Ptr(win32.WS_OVERLAPPEDWINDOW))
         rect := monitor_info.monitor
-        win32.set_window_pos(window_handle, win32.Hwnd(uintptr(0)), 
+        win32.set_window_pos(window_handle, win32.Hwnd(nil), 
             rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top,
             win32.SWP_NOOWNERZORDER | win32.SWP_FRAMECHANGED)
     }

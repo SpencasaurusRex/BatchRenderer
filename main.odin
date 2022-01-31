@@ -20,13 +20,13 @@ update_count: int
 
 game_data: data.Game_Data
 
+update_stats: perf.Frame_Stats
+render_stats: perf.Frame_Stats
+FRAME_STATS_COUNT :: 10
+
 main :: proc() {
-    when ODIN_DEBUG {
-        log.should_log_to_console(true)
-        log.should_log_to_file(true)
-        trace.init()
-        defer trace.stop()
-    }
+    log.should_log_to_console(true)
+    log.should_log_to_file(true)
     log.write("Starting")
     
     glfw.Init()
@@ -58,9 +58,16 @@ main :: proc() {
 
     for !glfw.WindowShouldClose(window) {
         new_time := f32(glfw.GetTime())
+        
+        perf.start_measure(&update_stats)
         update(new_time - previous_time)
+        perf.end_measure(&update_stats)
+        
         previous_time = new_time
+        
+        perf.start_measure(&render_stats)
         renderer.draw(&game_data)
+        perf.end_measure(&render_stats)
 
         glfw.SwapBuffers(window)
         glfw.PollEvents()
@@ -74,36 +81,31 @@ init :: proc() -> bool {
     
     log.write("Init")
 
-    game_data.entities = make([dynamic]data.Entity, 100)
+    game_data.entities = make([dynamic]data.Entity, 50000)
     for entity in &game_data.entities {
         entity.pos.x = rand.float32_range(0, 1)
         entity.pos.y = rand.float32_range(0, 1)
         entity.rot = rand.float32_range(0, math.PI * 2)
     }
 
+    perf.init(&update_stats, FRAME_STATS_COUNT)
+    perf.init(&render_stats, FRAME_STATS_COUNT)
+
     return true
 }
 
 
 update :: proc(dt: f32) {
-    trace.proc_start()
-    defer trace.proc_end()
-
-    perf.start_update()
-    defer perf.end_update()
-
     for entity in &game_data.entities {
         entity.rot += dt
         update_transform(&entity)
     }
 
-    if update_count % 10 == 0 {
-        perf.write_stats()
+    if update_count % 100 == 0 {
+        log.write("Update:", time.duration_microseconds(update_stats.average), "µs", "Render:", time.duration_microseconds(render_stats.average), "µs")
     }
 
     update_count += 1
-
-    
 }
 
 

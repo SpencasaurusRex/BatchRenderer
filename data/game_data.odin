@@ -1,13 +1,10 @@
 package data
 
-
 Game_Data :: struct {
     entities: [dynamic]Entity,
 }
 
-
 Vec3 :: [3]f32
-
 
 Entity :: struct {
     pos: Vec3,

@@ -4,9 +4,9 @@ import "core:strings"
 import "core:fmt"
 import "core:os"
 import "core:time"
+import "core:sys/win32"
 
 import "../log"
-import win "../windows"
 
 
 output_buffer: strings.Builder
@@ -93,9 +93,9 @@ _create_trace_file :: proc() -> bool {
     
     file_path: string
     
-    res := win.GetModuleFileNameA(cast(win.Hmodule)nil, transmute(cstring)&data, FILE_PATH_MAX)
+    res := win32.get_module_file_name_a(cast(win32.Hmodule)nil, transmute(cstring)&data, FILE_PATH_MAX)
 
-    if win.GetLastError() != 0 {
+    if win32.get_last_error() != 0 {
         log.write("Unable to locate exe, falling back to current directory")
         file_path = string(os.get_current_directory())
     }

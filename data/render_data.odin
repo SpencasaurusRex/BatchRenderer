@@ -1,6 +1,5 @@
 package data
 
-
 Render_Data :: struct {
     vao: u32,
     vbo: u32,
