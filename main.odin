@@ -97,8 +97,11 @@ update :: proc(dt: f64) {
 }
 
 
-key_callback :: proc(key_code: int, pressed: bool) {
-    log.write(key_code, pressed)
+key_callback :: proc(key_code: int, pressed, repeat: bool) {
+    if repeat {
+        return
+    }
+    log.write(key_code, pressed, repeat)
 }
 
 

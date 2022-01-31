@@ -16,7 +16,6 @@ window_handle: win32.Hwnd
 prev_window_placement: win32.Window_Placement
 
 key_changed: key_callback
-key_callback_accepts_repeats: bool
 
 Window_Mode :: enum {
     Windowed,
@@ -188,11 +187,13 @@ poll_events :: proc() {
                 fallthrough
             case win32.WM_SYSKEYUP:
                 key_code := int(message.wparam)
-                pressed := (message.lparam >> 30) & 1 == 0
-                up_flag := (message.lparam >> 31) & 1 == 1
-                repeat := pressed == up_flag
-                if key_changed != nil && (key_callback_accepts_repeats || !repeat) {
-                    key_changed(key_code, pressed || repeat)
+                
+                first_down := (message.lparam >> 30) & 1 == 0
+                first_up := (message.lparam >> 31) & 1 == 1
+                repeat := !first_down && !first_up
+                
+                if key_changed != nil {
+                    key_changed(key_code, !first_up, repeat)
                 }
 
             case:
@@ -206,12 +207,11 @@ swap_buffers :: proc() {
     win32.swap_buffers(device_context)
 }
 
-set_key_callback :: proc(callback: key_callback, accept_repeats := false) {
+set_key_callback :: proc(callback: key_callback) {
     key_changed = callback
-    key_callback_accepts_repeats = accept_repeats
 }
 
-key_callback :: proc(keycode: int, pressed: bool)
+key_callback :: proc(keycode: int, pressed, repeat: bool)
 
 _window_proc :: proc "std" (window: win32.Hwnd, message: u32, wparam: win32.Wparam, lparam: win32.Lparam) -> win32.Lresult {
     context = runtime.default_context()
