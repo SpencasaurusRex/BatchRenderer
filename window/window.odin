@@ -14,6 +14,9 @@ opengl_context: win32.Hglrc
 window_handle: win32.Hwnd
 prev_window_placement: win32.Window_Placement
 
+key_changed: key_callback
+key_callback_accepts_repeats: bool
+
 Window_Mode :: enum {
     Windowed,
     Fullscreen,
@@ -169,8 +172,30 @@ poll_events :: proc() {
             break
         }
 
-        win32.translate_message(&message)
-        win32.dispatch_message_a(&message)
+        switch(message.message) {
+            case win32.WM_SIZE:
+                gl.Viewport(0, 0, u32(win32.LOWORD_L(message.lparam)), u32(win32.HIWORD_L(message.lparam)))
+                draw()
+        
+            case win32.WM_KEYDOWN:
+                fallthrough
+            case win32.WM_KEYUP:
+                fallthrough
+            case win32.WM_SYSKEYDOWN:
+                fallthrough
+            case win32.WM_SYSKEYUP:
+                key_code := int(message.wparam)
+                pressed := (message.lparam >> 30) & 1 == 0
+                up_flag := (message.lparam >> 31) & 1 == 1
+                repeat := pressed == up_flag
+                if key_changed != nil && (key_callback_accepts_repeats || !repeat) {
+                    key_changed(key_code, pressed || repeat)
+                }
+
+            case:
+                win32.translate_message(&message)
+                win32.dispatch_message_a(&message)
+        }
     }
 }
 
@@ -179,7 +204,14 @@ draw :: proc() {
     win32.swap_buffers(device_context)
 }
 
-_window_proc :: proc "std" (window: win32.Hwnd, message: u32, w_param: win32.Wparam, l_param: win32.Lparam) -> win32.Lresult {
+set_key_callback :: proc(callback: key_callback, accept_repeats := false) {
+    key_changed = callback
+    key_callback_accepts_repeats = accept_repeats
+}
+
+key_callback :: proc(keycode: int, pressed: bool)
+
+_window_proc :: proc "std" (window: win32.Hwnd, message: u32, wparam: win32.Wparam, lparam: win32.Lparam) -> win32.Lresult {
     context = runtime.default_context()
 
     switch message {
@@ -189,11 +221,6 @@ _window_proc :: proc "std" (window: win32.Hwnd, message: u32, w_param: win32.Wpa
             fallthrough
         case win32.WM_QUIT:
             should_close = true
-        case win32.WM_SIZE:
-            gl.Viewport(0, 0, u32(win32.LOWORD_L(l_param)), u32(win32.HIWORD_L(l_param)))
-            draw()
     }
-
-
-    return win32.def_window_proc_a(window, message, w_param, l_param)
+    return win32.def_window_proc_a(window, message, wparam, lparam)
 }

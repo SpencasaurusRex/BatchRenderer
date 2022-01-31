@@ -5,17 +5,17 @@ import "core:fmt"
 import "core:math"
 import "core:math/rand"
 
-import gl "vendor:OpenGL"
-import "vendor:glfw"
-
 import "perf"
 import "log"
 import "renderer"
 import "trace"
 import "data"
 
+import "vendor:glfw"
+import gl "vendor:OpenGL"
+// import "window"
+// import "gl"
 
-window : glfw.WindowHandle
 update_count: int
 
 game_data: data.Game_Data
@@ -24,18 +24,21 @@ update_stats: perf.Frame_Stats
 render_stats: perf.Frame_Stats
 FRAME_STATS_COUNT :: 10
 
+window: glfw.WindowHandle
+
 main :: proc() {
     log.should_log_to_console(true)
     log.should_log_to_file(true)
     log.write("Starting")
     
-    glfw.Init()
-    
     res_x, res_y : i32 = 800,600
-
+    
     log.write("Creating window", res_x, "x", res_y)
-    window = glfw.CreateWindow(res_x, res_y, "Batch Renderer", nil, nil)
+    glfw.Init()
+    // window.open("Batch Renderer", res_x, res_y, .Windowed)
+    
     glfw.SwapInterval(1)
+    window = glfw.CreateWindow(res_x, res_y, "Batch Renderer", nil, nil)
     glfw.MakeContextCurrent(window)
     glfw.SetKeyCallback(window, key_callback)
     glfw.SetFramebufferSizeCallback(window, size_callback)
@@ -81,7 +84,7 @@ init :: proc() -> bool {
     
     log.write("Init")
 
-    game_data.entities = make([dynamic]data.Entity, 50000)
+    game_data.entities = make([dynamic]data.Entity, 1000)
     for entity in &game_data.entities {
         entity.pos.x = rand.float32_range(0, 1)
         entity.pos.y = rand.float32_range(0, 1)
@@ -102,7 +105,7 @@ update :: proc(dt: f32) {
     }
 
     if update_count % 100 == 0 {
-        log.write("Update:", time.duration_microseconds(update_stats.average), "µs", "Render:", time.duration_microseconds(render_stats.average), "µs")
+        log.write("Update:", time.duration_microseconds(update_stats.average), "us", "Render:", time.duration_microseconds(render_stats.average), "us")
     }
 
     update_count += 1
